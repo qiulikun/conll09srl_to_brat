@@ -7,7 +7,7 @@ def conll09srl_to_brat(srl, ann=None):
     if ann:
         # split annotation information line by line and make table
         ann_list = ann.split('\n')
-        ann_table = map(lambda x: re.split(r'\t|\s:', x), ann_list)
+        ann_table = map(lambda x: re.split(r'\t|\s|:', x), ann_list)
         ann_table = list(filter(lambda x: x != [''], ann_table))  # remove blank line
 
         # find max R and T annotation numbers
@@ -213,7 +213,10 @@ def conll09srl_to_brat(srl, ann=None):
 
     ann_string_list = []
     for ann_line in list(filter(lambda x: x[0][0] != 'R', ann_table)):
-        ann_string_list.append(ann_line[0] + "\t" + ann_line[1] + " " + ann_line[2] + " " + ann_line[3] + "\t" + ann_line[4])
+        if ann_line[0][0] == 'T':
+            ann_string_list.append(ann_line[0] + "\t" + ann_line[1] + " " + ann_line[2] + " " + ann_line[3] + "\t" + ann_line[4])
+        elif ann_line[0][0] == 'E':
+            ann_string_list.append(ann_line[0] + "\t" + ann_line[1] + ":" + ann_line[2])
     for ann_line in list(filter(lambda x: x[0][0] == 'R', ann_table)):
         ann_string_list.append(ann_line[0] + "\t" + ann_line[1] + " " + ann_line[2] + ":" + ann_line[3] + " " + ann_line[4] + ":" + ann_line[5])
 
