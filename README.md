@@ -3,7 +3,7 @@ This is an experimental program that converts semantic role labels in a CoNLL200
 
 
 ## Usage
-python3 conll09srl_to_brat.py INPUT
+python3 conll09srl_to_brat.py test.txt
 
 ## License
 Apache License 2.0
