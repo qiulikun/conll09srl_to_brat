@@ -1,6 +1,8 @@
 # Brat Annotation Generator from CoNLL09 Semantic Role Labels
 This is an experimental program that converts semantic role labels in a CoNLL2009 format text file into Brat annotation format.
 
+Note that it still contains bugs.
+
 ## Usage
 python3 conll09srl_to_brat.py test.txt
 
