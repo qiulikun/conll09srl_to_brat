@@ -249,6 +249,6 @@ if __name__ == '__main__':
 
     if args.output_file:
         with open(args.output_file, 'w') as f:
-            srl = f.read()
+            f.write(brat_annotation)
     else:
         print(brat_annotation)
