@@ -4,7 +4,7 @@ This is an experimental program that converts semantic role labels in a CoNLL200
 Note that it still contains bugs.
 
 ## Usage
-python3 conll09srl_to_brat.py test.txt
+python3 conll09srl\_to\_brat.py test.txt
 
 If you visualize with Brat, you will get like this.
 ![Image](https://i.imgur.com/Tcc9o2R.png "Sample")
