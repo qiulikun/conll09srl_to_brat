@@ -7,8 +7,25 @@ def conll09srl_to_brat(srl, ann=None):
     if ann:
         # split annotation information line by line and make table
         ann_list = ann.split('\n')
-        ann_table = map(lambda x: re.split(r'\t|\s|:', x), ann_list)
-        ann_table = list(filter(lambda x: x != [''], ann_table))  # remove blank line
+        ann_table =[]
+        for ann_line_tmp in ann_list:
+            if ann_line_tmp:
+                if ann_line_tmp[0] == 'T' and ';' in ann_line_tmp:
+                    # Term-boundary (separated word case!)
+                    line_tmp1 = re.split(r'\t', ann_line_tmp)
+                    line_tmp2 = re.split(r'\s|;', line_tmp1[1])
+                    ann_table.append(
+                        [line_tmp1[0], line_tmp2[0], line_tmp2[1] + ' ' + line_tmp2[2], line_tmp2[3] + ' ' + line_tmp2[4],
+                         line_tmp1[2]])
+                elif ann_line_tmp[0] == 'T':
+                    # Term - boundary(single or continuous word(s))
+                    line_tmp1 = re.split(r'\t', ann_line_tmp)
+                    line_tmp2 = re.split(r'\s|;', line_tmp1[1])
+                    ann_table.append(
+                        [line_tmp1[0], line_tmp2[0], line_tmp2[1], line_tmp2[2], line_tmp1[2]])
+                elif ann_line_tmp[0] == 'E' or ann_line_tmp[0] == 'R':
+                    # Relation, Event
+                    ann_table.append(re.split(r'\t|\s|:', ann_line_tmp))
 
         # find max R and T annotation numbers
         t_ann_list = list(filter(lambda x: x[0][0] == 'T', ann_table))
@@ -214,7 +231,11 @@ def conll09srl_to_brat(srl, ann=None):
     ann_string_list = []
     for ann_line in list(filter(lambda x: x[0][0] != 'R', ann_table)):
         if ann_line[0][0] == 'T':
-            ann_string_list.append(ann_line[0] + "\t" + ann_line[1] + " " + ann_line[2] + " " + ann_line[3] + "\t" + ann_line[4])
+            if ' ' not in ann_line[2]:
+                ann_string_list.append(ann_line[0] + "\t" + ann_line[1] + " " + ann_line[2] + " " + ann_line[3] + "\t" + ann_line[4])
+            else:
+                ann_string_list.append(
+                    ann_line[0] + "\t" + ann_line[1] + " " + ann_line[2] + ";" + ann_line[3] + "\t" + ann_line[4])
         elif ann_line[0][0] == 'E':
             ann_string_list.append(ann_line[0] + "\t" + ann_line[1] + ":" + ann_line[2])
     for ann_line in list(filter(lambda x: x[0][0] == 'R', ann_table)):
@@ -255,3 +276,4 @@ if __name__ == '__main__':
             f.write(brat_annotation)
     else:
         print(brat_annotation)
+
