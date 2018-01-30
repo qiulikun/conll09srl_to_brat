@@ -7,8 +7,8 @@ Note that it still contains bugs.
 nltk MosesDetokenizer
 
 Just install "perluniprops" package  
-  >> import nltk  
-  >> nltk.download('perluniprops')
+\>\> import nltk  
+\>\> nltk.download('perluniprops')
 
 
 ## Usage
