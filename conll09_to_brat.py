@@ -1,5 +1,7 @@
 from argparse import ArgumentParser
 import re
+from nltk.tokenize.moses import MosesDetokenizer
+detokenizer = MosesDetokenizer()
 
 
 def conll09srl_to_brat(srl, ann=None):
@@ -110,6 +112,13 @@ def conll09srl_to_brat(srl, ann=None):
             print("***Dict is empty***")
         # logger.info("\n")
 
+    def token2string(tokens):
+        detokens = detokenizer.detokenize(tokens, return_str=False)
+        detokens_joint = " ".join(detokens)
+        detokens_joint = detokens_joint.replace(" -- ", "–")
+        detokens_joint = detokens_joint.replace(" ( ", " (")
+        return detokens_joint
+
     def count_dict_characters_as_sentences(src_dict, start=None, end=None):
         if not start:
             start = min(map(lambda x: int(x), list(src_dict.keys())))
@@ -118,21 +127,10 @@ def conll09srl_to_brat(srl, ann=None):
             end = int(start)
         keys_in_order = list(range(int(start), int(end)+1))
 
-        character_count = 0
-        if len(keys_in_order) > 1:
-            for num in keys_in_order[:-1]:
-                if src_dict[str(num)][9] != 'P':
-                    character_count = character_count + len(src_dict[str(num)][0]) + 1
-                else:
-                    if src_dict[str(num)][0] == '--':
-                        character_count = character_count  # special case for hyphen
-                    else:
-                        character_count = character_count + len(src_dict[str(num)][0])
-
-        if src_dict[str(keys_in_order[-1])][9] == 'P':
-            character_count = character_count + len(src_dict[str(keys_in_order[-1])][0]) - 1
-        else:
-            character_count = character_count + len(src_dict[str(keys_in_order[-1])][0])
+        words = []
+        for num in keys_in_order:
+            words.append(src_dict[str(num)][0])
+        character_count = len(token2string(words))
 
         return character_count
 
@@ -171,15 +169,11 @@ def conll09srl_to_brat(srl, ann=None):
 
                     end_position = start_position + count_dict_characters_as_sentences(srl_dict, min_phrase_numbers, max_phrase_numbers)
 
-                    phrase = ''
+                    phrase = []
                     for num in phrase_numbers:
-                        if srl_dict[num][9] != 'P':
-                            phrase = phrase + ' ' + srl_dict[num][0]
-                        else:
-                            phrase = phrase + srl_dict[num][0]
-                    phrase = phrase[1:]
+                        phrase.append(srl_dict[num][0])
 
-                    content = [start_position, end_position, phrase]
+                    content = [start_position, end_position, token2string(phrase)]
                     return content
 
                 def find_phrase_keys(ax_key, srl_dict):
@@ -193,8 +187,7 @@ def conll09srl_to_brat(srl, ann=None):
                         return result
 
                     result_keys = []
-                    if srl_dict[ax_key][3] != 'IN':
-                        result_keys.append(ax_key)
+                    result_keys.append(ax_key)
 
                     current_keys = [ax_key]
                     parent_keys = [ax_key]
@@ -204,13 +197,18 @@ def conll09srl_to_brat(srl, ann=None):
                             result_keys.append(k)
                         current_keys = parent_keys
 
+                    # remove preposition
                     result_keys = list(map(lambda x: int(x), result_keys))
                     result_keys.sort()
+                    if srl_dict[str(result_keys[0])][3] == "IN":
+                        result_keys = result_keys[1:]
                     result_keys = list(map(lambda x: str(x), result_keys))
+
                     return result_keys
 
                 [start, end, phrase] = startpos_endpos_phrase(srl_verb_key, srl_dict)
-                tid_root = ann_table_append_T('Predicate', start + word_count_paragraph, end + word_count_paragraph, phrase)
+
+                tid_root = ann_table_append_T('V:' + srl_dict[srl_verb_key][12], start + word_count_paragraph, end + word_count_paragraph, phrase)
 
                 for srl_key, srl_val in srl_dict.items():
                     srl_cell = srl_val[13 + srl_verb_keys.index(srl_verb_key) + parsed_verb_number]
