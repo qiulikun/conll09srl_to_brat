@@ -109,8 +109,7 @@ def conll09srl_to_brat(srl, ann=None):
             for num in keys_in_order:
                 print(str(num) + ' ' + str(src_dict[str(num)]))
         else:
-            print("***Dict is empty***")
-        # logger.info("\n")
+            print("*** Dict is empty. ***")
 
     def token2string(tokens):
         detokens = detokenizer.detokenize(tokens, return_str=False)
@@ -214,10 +213,10 @@ def conll09srl_to_brat(srl, ann=None):
                     srl_cell = srl_val[13 + srl_verb_keys.index(srl_verb_key) + parsed_verb_number]
                     if srl_pattern.match(srl_cell):
                         target_keys = find_phrase_keys(srl_key, srl_dict)
-
-                        [start, end, phrase] = startpos_endpos_phrase(target_keys, srl_dict)
-                        tid_ax = ann_table_append_T('Argument', start + word_count_paragraph, end + word_count_paragraph, phrase)
-                        ann_table_append_R(srl_cell, tid_root, tid_ax)
+                        if target_keys:
+                            [start, end, phrase] = startpos_endpos_phrase(target_keys, srl_dict)
+                            tid_ax = ann_table_append_T('Argument', start + word_count_paragraph, end + word_count_paragraph, phrase)
+                            ann_table_append_R(srl_cell, tid_root, tid_ax)
 
             word_count_paragraph = word_count_paragraph + count_dict_characters_as_sentences(srl_dict) + 1
             parsed_verb_number = parsed_verb_number + len(srl_verb_keys)
