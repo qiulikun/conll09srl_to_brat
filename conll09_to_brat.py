@@ -115,7 +115,9 @@ def conll09srl_to_brat(srl, ann=None):
         detokens = detokenizer.detokenize(tokens, return_str=False)
         detokens_joint = " ".join(detokens)
         detokens_joint = detokens_joint.replace(" -- ", "–")
-        detokens_joint = detokens_joint.replace(" ( ", " (")
+        detokens_joint = detokens_joint.replace("( ", "(")
+        # detokens_joint = detokens_joint.replace("'", "’")  # for special case
+        detokens_joint = detokens_joint.replace("-", "-")  # for special case
         return detokens_joint
 
     def count_dict_characters_as_sentences(src_dict, start=None, end=None):
@@ -160,11 +162,14 @@ def conll09srl_to_brat(srl, ann=None):
                     min_phrase_numbers = min(list(map(lambda x: int(x), phrase_numbers)))
                     max_phrase_numbers = max(list(map(lambda x: int(x), phrase_numbers)))
                     start_dict_numbers = min(list(map(lambda x: int(x), srl_dict.keys())))
-
                     if min_phrase_numbers > start_dict_numbers:
-                        start_position = count_dict_characters_as_sentences(srl_dict, start_dict_numbers, min_phrase_numbers - 1 ) + 1
+                        start_position = count_dict_characters_as_sentences(srl_dict, start_dict_numbers, min_phrase_numbers - 1)
+                        if srl_dict[str(min_phrase_numbers - 1)][0] == '(' or srl_dict[str(min_phrase_numbers)][0] == '%':
+                            pass
+                        else:
+                            start_position = start_position + 1  # counting a space
                     else:
-                        start_position = 0
+                        start_position = 0  # no space
 
                     end_position = start_position + count_dict_characters_as_sentences(srl_dict, min_phrase_numbers, max_phrase_numbers)
 
@@ -185,8 +190,7 @@ def conll09srl_to_brat(srl, ann=None):
                                     result.append(k)
                         return result
 
-                    result_keys = []
-                    result_keys.append(ax_key)
+                    result_keys = [ax_key]
 
                     current_keys = [ax_key]
                     parent_keys = [ax_key]
@@ -205,14 +209,50 @@ def conll09srl_to_brat(srl, ann=None):
 
                     return result_keys
 
+                def remove_verb_phrase_from_keys(target_keys, verb_key, srl_dict):
+                    if verb_key not in target_keys:
+                        return target_keys
+                    else:
+                        verb_keys = find_phrase_keys(verb_key, srl_dict)
+                        removal_pos_list = ["TO", "MD", "VBG", "VBZ", "WDT"]
+                        verb_key_previous = str(int(verb_key) - 1)
+                        while True:
+                            if verb_key_previous in srl_dict.keys():
+                                verb_parent_pos = srl_dict[verb_key_previous][4]
+                                if verb_parent_pos in removal_pos_list:
+                                    verb_keys.append(verb_key_previous)
+                                    verb_key_previous = str(int(verb_key_previous) - 1)
+                                else:
+                                    break
+                            else:
+                                break
+                        for vk in verb_keys:
+                            if vk in target_keys:
+                                target_keys.remove(vk)
+                        return target_keys
+
+                def abandon_fragment(target_keys):
+                    if target_keys:
+                        min_key_int = min(list(map(lambda x: int(x), target_keys)))
+                        max_key_int = max(list(map(lambda x: int(x), target_keys)))
+                        if len(target_keys) != max_key_int - min_key_int + 1:
+                            return None
+                        else:
+                            return target_keys
+                    else:
+                        return None
+
+
                 [start, end, phrase] = startpos_endpos_phrase(srl_verb_key, srl_dict)
 
-                tid_root = ann_table_append_T('V:' + srl_dict[srl_verb_key][12], start + word_count_paragraph, end + word_count_paragraph, phrase)
+                tid_root = ann_table_append_T('P:' + srl_dict[srl_verb_key][12], start + word_count_paragraph, end + word_count_paragraph, phrase)
 
                 for srl_key, srl_val in srl_dict.items():
                     srl_cell = srl_val[13 + srl_verb_keys.index(srl_verb_key) + parsed_verb_number]
                     if srl_pattern.match(srl_cell):
                         target_keys = find_phrase_keys(srl_key, srl_dict)
+                        target_keys = remove_verb_phrase_from_keys(target_keys, srl_verb_key, srl_dict)
+                        target_keys = abandon_fragment(target_keys)
                         if target_keys:
                             [start, end, phrase] = startpos_endpos_phrase(target_keys, srl_dict)
                             tid_ax = ann_table_append_T('Argument', start + word_count_paragraph, end + word_count_paragraph, phrase)
@@ -273,4 +313,3 @@ if __name__ == '__main__':
             f.write(brat_annotation)
     else:
         print(brat_annotation)
-
